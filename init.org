@@ -1,0 +1,216 @@
+#+STARTUP: overview
+
+* powerline
+
+#+BEGIN_SRC emacs-lisp
+  (use-package powerline
+	:ensure t
+	:config
+	(powerline-default-theme))
+#+END_SRC
+
+* org
+
+#+BEGIN_SRC emacs-lisp
+  (use-package org-bullets
+	:ensure t
+	:config
+	(add-hook 'org-mode-hook (lambda () (org-bullets-mode 1))))
+
+  (use-package ox-reveal
+	:ensure t)
+
+  (setq org-reveal-root "http://cdn.jsdelivr.net/reveal.js/3.0.0/")
+  (setq org-reveal-mathjax t)
+
+  (use-package htmlize
+	:ensure t)
+#+END_SRC
+
+* c-mode
+
+#+BEGIN_SRC emacs-lisp
+  (use-package cc-mode
+    :ensure t)
+#+END_SRC
+
+* flycheck
+
+#+BEGIN_SRC emacs-lisp
+  (use-package flycheck
+	:ensure t
+	:init
+	(global-flycheck-mode t))
+#+END_SRC
+
+* auto-complete
+
+#+BEGIN_SRC emacs-lisp
+  (use-package auto-complete
+	:ensure t
+	:init
+	(progn
+	  (ac-config-default)
+	  (global-auto-complete-mode t)
+	  ))
+#+END_SRC
+
+* yasnippet
+
+#+BEGIN_SRC emacs-lisp
+  (use-package yasnippet
+	:ensure t
+	:init
+	(yas-global-mode 1))
+#+END_SRC
+
+* counsel/ivy/swiper
+
+#+BEGIN_SRC emacs-lisp
+  (use-package counsel
+	:ensure t
+	:bind
+	(("M-y" . counsel-yank-pop)
+	 :map ivy-minibuffer-map
+	 ("M-y" . ivy-next-line))
+	)
+
+  (use-package ivy
+	:ensure t
+	:diminish (ivy-mode)
+	;; :bind (("C-x b" . ivy-switch-buffer))
+	:config
+	(ivy-mode 1)
+	(setq ivy-use-virtual-buffers t)
+	(setq ivy-display-style 'fancy)
+	)
+
+  (use-package swiper
+	:ensure t
+	:bind (("C-s" . swiper)
+		   ("C-r" . swiper)
+		   ("C-c C-r" . ivy-resume)
+		   ("M-x" . counsel-M-x)
+		   ("C-x C-f" . counsel-find-file))
+	:config
+	(progn
+	  (ivy-mode 1)
+	  (setq ivy-use-virtual-buffers t)
+	  (setq ivy-display-style 'fancy)
+	  (define-key read-expression-map (kbd "C-r") 'counsel-expression-history)
+	  ))
+#+END_SRC
+
+* ggtags
+
+#+BEGIN_SRC emacs-lisp
+  (use-package ggtags
+	:ensure t
+	:config)
+#+END_SRC
+
+* dired
+
+#+BEGIN_SRC emacs-lisp
+  (use-package dired+
+	:ensure t
+	:config (require 'dired+))
+
+  (use-package dired-quick-sort
+	:ensure t
+	:config
+	(dired-quick-sort-setup))
+#+END_SRC
+
+* Other Configuration
+
+#+BEGIN_SRC emacs-lisp
+  ;; deletes all the whitespace when you hit backspace or delete
+  (use-package hungry-delete
+	:ensure t
+	:config
+	(global-hungry-delete-mode))
+
+  ;; Graphically indicate the fill column
+  (use-package fill-column-indicator)
+
+  (defun c-lineup-arglist-tabs-only (ignored)
+	"Line up argument lists by tabs, not spaces."
+	(let* ((anchor (c-langelem-pos c-syntactic-element))
+		   (column (c-langelem-2nd-pos c-syntactic-element))
+		   (offset (- (1+ column) anchor))
+		   (steps (floor offset c-basic-offset)))
+	  (* (max steps 1)
+		 c-basic-offset)))
+
+  ;; Add kernel style
+  (c-add-style "linux-tabs-only"
+			   '("linux"
+				 (indent-tabs-mode . t)
+				 (tab-width . 8)
+				 (c-offsets-alist
+				  (arglist-cont-nonempty
+				   c-lineup-gcc-asm-reg
+				   c-lineup-arglist-tabs-only))))
+
+  ;; Add Ring C style
+  (c-add-style "ring"
+			   '("stroustrup"
+				 (indent-tabs-mode . nil)
+				 (tab-width . 4)
+				 (c-offsets-alist (innamespace . 0)
+								  (case-label . +)
+								  (access-label . -) )))
+
+  ;; Add Ring C++ style
+  (c-add-style "ring-c++"
+			   '("ring"
+				 (c-offsets-alist (innamespace . 0)
+								  (case-label . +)
+								  (access-label . -) )))
+
+  ;; Default config for C/C++ modes
+  (add-hook 'c-mode-common-hook
+			(lambda ()
+			  (fci-mode)
+			  (whitespace-mode)
+			  (hide-ifdef-mode)
+			  (hs-minor-mode) ))
+
+  (add-hook 'c-mode-common-hook
+			  (lambda ()
+				(when (derived-mode-p 'c-mode 'c++-mode 'java-mode)
+				  (ggtags-mode 1) )))
+
+  ;; Default config for Python mode
+  (add-hook 'python-mode-hook
+			(lambda ()
+			  (whitespace-mode)
+			  (hs-minor-mode) ))
+
+  ; Set SFL coding style when file is inside Ring source
+  (defun ring-hook ()
+	(let ((filename (buffer-file-name)))
+	  (when (and filename
+				 (string-match (expand-file-name "~/Projects/Ring")
+							   filename))
+		(c-set-style "ring-c++"))))
+
+  (add-hook 'c-mode-hook 'ring-hook)
+  (add-hook 'c++-mode-hook 'ring-hook)
+
+  ;; Force .h files to open in c++-mode by default
+  (add-to-list 'auto-mode-alist '("\\.h\\'" . c++-mode))
+
+  ;; Fix for show-trailing-whitespace with fill-column-indicator
+  (setq whitespace-style '(face trailing))
+
+  ;; ERC (IRC client)
+  ;(require 'erc)
+
+  (global-set-key [f6] 'whitespace-cleanup)
+  (global-set-key [f7] 'hs-toggle-hiding)
+  (global-set-key [f8] 'hs-hide-level)
+  (global-set-key [f12] 'text-scale-increase)
+  (global-set-key [S-f12] 'text-scale-decrease)
+#+END_SRC
